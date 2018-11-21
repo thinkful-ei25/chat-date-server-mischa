@@ -4,10 +4,14 @@ const express = require('express');
 const cors = require('cors');
 const morgan = require('morgan');
 const mongoose = require('mongoose');
-const router = require('./routers/messagesRouter');
+const {router: messageRouter} = require('./messages/messagesRouter');
+const {router: userRouter} = require('./users/userRouter');
+const {router: authRouter} = require('./auth/authRouter');
+const {router: chatRoomRouter} = require('./chatroom/chatRoomRouter');
 const { PORT, CLIENT_ORIGIN, MONGODB_URI } = require('./config');
-// const { dbConnect } = require('./db-mongoose');
-// const {dbConnect} = require('./db-knex');
+const passport = require('passport');
+const { localStrategy, jwtStrategy } = require('./auth/strategies');
+
 
 const app = express();
 
@@ -22,8 +26,13 @@ app.use(
     origin: CLIENT_ORIGIN
   })
 );
+passport.use(localStrategy);
+passport.use(jwtStrategy);
 
-app.use('/api', router);
+app.use('/api', messageRouter);
+app.use('/user', userRouter);
+app.use('/auth', authRouter);
+app.use('/api/chat-room', chatRoomRouter);
 
 
 // Custom 404 Not Found route handler
@@ -40,6 +49,7 @@ app.use((err, req, res, next) => {
     res.status(err.status).json(errBody);
   } else {
     res.status(500).json({ message: 'Internal Server Error' });
+    // console.log(err);
   }
 });
 

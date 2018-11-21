@@ -1,11 +1,13 @@
 const mongoose = require('mongoose');
 mongoose.Promise = global.Promise;
+// const { User } = require('../users/userModel');
 
 const MessageSchema = mongoose.Schema({
   message: {
     type: String,
-    required: true
-  }
+    required: true,
+  },
+  user: {type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true}
 });
 MessageSchema.set('toJSON', {
   virtuals: true,
