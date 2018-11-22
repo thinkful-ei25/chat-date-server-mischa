@@ -4,7 +4,7 @@ const bodyParser = require('body-parser');
 const passport = require('passport');
 const { Message } = require('../messages/messageModel');
 const { User } = require('../users/userModel');
-const { Chatroom } = require('./chatroomModel');
+const { Chatroom, genURL } = require('./chatroomModel');
 const router = express.Router();
 
 const jsonParser = bodyParser.json();
@@ -21,13 +21,16 @@ const jwtAuth = passport.authenticate('jwt', {session: false});
     
 // }
 router.post('/', jwtAuth, /* getUserId, */ (req, res, next) => {
-  // console.log('user is: ',req.userId);
-  console.log('user is:, ', req.user.id);
   return (
     Chatroom.create({users: req.user.id})
       .then((result) => {
-        // console.log(result);  
-        res.location(`${req.originalUrl}/${result.id}`).sendStatus(201);
+        const id = {_id: result._id};
+        const url =  genURL();
+        Chatroom.findOneAndUpdate(id, {url})
+          .then((result) => {
+            // console.log('new chatroom: ',result);
+            res.location(`${req.originalUrl}/${result.id}`).status(201).json({url, id: result._id});
+          });
         // res.sendStatus(201);
       })
       // .populate('users')

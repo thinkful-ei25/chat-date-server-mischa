@@ -9,13 +9,31 @@ const ChatroomSchema = mongoose.Schema({
     type: [{type: mongoose.Schema.Types.ObjectId, ref: 'User'}],
     validate: [arrayLimit, '{PATH} exceeds the limit of 2'],
     required: true
+  },
+  url: {type: String, /* default: genURL() */}
+});
+ChatroomSchema.set('toJSON', {
+  virtuals: true,
+  transform: (doc, result) => {
+    delete result._id;
+    delete result.__v;
   }
 });
 
 function arrayLimit(val) {
   return val.length <= 2;
 }
+function genURL(len=10) {
+  // len = len || 10;
+  const alpha = 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ';
+  let url = '/chat-room/';
+  for(let i=0; i<len; i++) {
+    url += alpha[Math.floor(Math.random()*alpha.length)];
+  }
+  return url;
+}
+
 
 const Chatroom = mongoose.model('Chatroom', ChatroomSchema);
 
-module.exports = { Chatroom };
+module.exports = { Chatroom, genURL };
