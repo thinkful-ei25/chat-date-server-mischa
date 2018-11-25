@@ -94,6 +94,7 @@ router.post('/', jsonParser, (req, res) => {
       location: tooSmallField || tooLargeField
     });
   }
+  
 
   let {username, password, firstName = '', lastName = ''} = req.body;
   // Username and password come in pre-trimmed, otherwise we throw an error
