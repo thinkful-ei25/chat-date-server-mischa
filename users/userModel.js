@@ -16,7 +16,8 @@ const UserSchema = mongoose.Schema({
   },
   firstName: {type: String, default: ''},
   lastName: {type: String, default: ''},
-  loggedIn: {type: Boolean, default: false}
+  loggedIn: {type: Boolean, default: false},
+  connections: [{type: mongoose.Schema.Types.ObjectId, ref: 'User'}]
 });
 
 UserSchema.methods.serialize = function() {
@@ -27,6 +28,14 @@ UserSchema.methods.serialize = function() {
     id: this._id
   };
 };
+
+UserSchema.set('toJSON', {
+  virtuals: true,
+  transform: (doc, result) => {
+    delete result._id;
+    delete result.__v;
+  }
+});
 
 UserSchema.methods.validatePassword = function(password) {
   return bcrypt.compare(password, this.password);

@@ -10,8 +10,10 @@ const ChatroomSchema = mongoose.Schema({
     validate: [arrayLimit, '{PATH} exceeds the limit of 2'],
     required: true
   },
-  url: {type: String, /* default: genURL() */}
+  url: {type: String},
+  active: {type: Boolean, required: true, default: true}
 });
+
 ChatroomSchema.set('toJSON', {
   virtuals: true,
   transform: (doc, result) => {

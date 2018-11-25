@@ -32,7 +32,7 @@ passport.use(jwtStrategy);
 app.use('/api', messageRouter);
 app.use('/user', userRouter);
 app.use('/auth', authRouter);
-app.use('/api/chat-room', chatRoomRouter);
+app.use('/api', chatRoomRouter);
 
 
 // Custom 404 Not Found route handler
