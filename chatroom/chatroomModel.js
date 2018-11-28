@@ -11,7 +11,8 @@ const ChatroomSchema = mongoose.Schema({
     required: true
   },
   url: {type: String},
-  active: {type: Boolean, required: true, default: true}
+  active: {type: Boolean, required: true, default: true},
+  asker: {type: mongoose.Schema.Types.ObjectId, ref: 'User'}
 });
 
 ChatroomSchema.set('toJSON', {

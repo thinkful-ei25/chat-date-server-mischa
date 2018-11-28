@@ -17,6 +17,7 @@ const UserSchema = mongoose.Schema({
   firstName: {type: String, default: ''},
   lastName: {type: String, default: ''},
   loggedIn: {type: Boolean, default: false},
+  active: {type: Boolean, default: false},
   connections: [{type: mongoose.Schema.Types.ObjectId, ref: 'User'}]
 });
 

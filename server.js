@@ -11,8 +11,6 @@ const {router: chatRoomRouter} = require('./chatroom/chatRoomRouter');
 const { PORT, CLIENT_ORIGIN, MONGODB_URI } = require('./config');
 const passport = require('passport');
 const { localStrategy, jwtStrategy } = require('./auth/strategies');
-
-
 const app = express();
 
 app.use(
@@ -29,10 +27,11 @@ app.use(
 passport.use(localStrategy);
 passport.use(jwtStrategy);
 
-app.use('/api', messageRouter);
+
 app.use('/user', userRouter);
 app.use('/auth', authRouter);
-app.use('/api', chatRoomRouter);
+app.use('/api', messageRouter);
+app.use('/api/chat-room/', chatRoomRouter);
 
 
 // Custom 404 Not Found route handler
@@ -63,6 +62,7 @@ function runServer(port = PORT) {
       console.error('Express failed to start');
       console.error(err);
     });
+  // console.log(io.listen(server));
 }
 
 function dbConnect () { 

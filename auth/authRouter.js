@@ -23,38 +23,58 @@ const localAuth = passport.authenticate('local', {session: false});
 // The user provides a username and password to login
 
 router.post('/login', jsonParser, localAuth, ((req, res, next) => {
-  console.log(req.user.username);
   User.findOneAndUpdate({username: req.user.username},  {loggedIn: true})
     .then(() => {
       const authToken = createAuthToken(req.user.serialize());
       res.json({authToken});
     })
     .catch(err => {
-      console.log(err);
       next(err);
     });
 })
 );
-
+//fix this!! 
 const jwtAuth = passport.authenticate('jwt', {session: false});
+router.get('/active-user', jwtAuth, (req,res,next) => {
+  const _id = req.user.id;
+  let i = 0;
+  console.log('route hit!');
+
+  if(req.headers.active){
+    // console.log(true);
+    // console.log('req.headers:, ',req.headers);
+    User.findOneAndUpdate({_id}, {active: true}, {new: true})
+      .then((result) => {
+      });
+
+  }else{
+    console.log('false');
+    User.findOneAndUpdate({_id}, {active: false}, {new: true})
+      .then((result) => console.log(result));
+  }
+
+});
+
 
 // The user exchanges a valid JWT for a new one with a later expiration
-router.post('/refresh', jwtAuth, (req, res) => {
-  console.log(req.user);
-  const authToken = createAuthToken(req.user);
-  res.json({authToken});
+router.post('/refresh', jwtAuth, (req, res, next) => {
+  User.findOneAndUpdate({username: req.user.username},  {loggedIn: true})
+    .then(() => {
+      const authToken = createAuthToken(req.user);
+      res.json({authToken});
+    })
+    .catch(err => {
+      next(err);
+    });
   
 });
 
 router.get('/logout', jwtAuth, (req, res, next) => {
-  console.log('test');
   User.findOneAndUpdate({username: req.user.username},  {loggedIn: false})
     .then((result) => {
-      console.log(result);
       res.sendStatus(200);
     })
     .catch(err => {
-      console.log(err);
       next(err);
     });
 });
