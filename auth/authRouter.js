@@ -35,25 +35,6 @@ router.post('/login', jsonParser, localAuth, ((req, res, next) => {
 );
 //fix this!! 
 const jwtAuth = passport.authenticate('jwt', {session: false});
-router.get('/active-user', jwtAuth, (req,res,next) => {
-  const _id = req.user.id;
-  let i = 0;
-  console.log('route hit!');
-
-  if(req.headers.active){
-    // console.log(true);
-    // console.log('req.headers:, ',req.headers);
-    User.findOneAndUpdate({_id}, {active: true}, {new: true})
-      .then((result) => {
-      });
-
-  }else{
-    console.log('false');
-    User.findOneAndUpdate({_id}, {active: false}, {new: true})
-      .then((result) => console.log(result));
-  }
-
-});
 
 
 // The user exchanges a valid JWT for a new one with a later expiration
