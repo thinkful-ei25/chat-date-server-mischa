@@ -12,9 +12,8 @@ const questions = [
 
 mongoose.connect(MONGODB_URI)
   .then(() => {
-    return Promise(
-      ChatQuestion.create({questions: questions[0] })
-    );
+    return ChatQuestion.create({questions});
+    
   })
   .then((result ) => console.log(result))
   .then(() => mongoose.disconnect())
