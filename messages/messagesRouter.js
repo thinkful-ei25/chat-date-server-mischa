@@ -9,16 +9,16 @@ const router = express.Router();
 
 const jsonParser = bodyParser.json();
 
-const jwtAuth = passport.authenticate('jwt', {session: false});
+const jwtAuth = passport.authenticate('jwt', { session: false });
 
 //validate user!
-function userInChatRoom(req,res,next){
-  const {url} = req.headers;
-  Chatroom.findOne({url})
+function userInChatRoom(req, res, next) {
+  const { url } = req.headers;
+  Chatroom.findOne({ url })
     .then(result => {
-      if(!result.users.includes(req.user.id).toString()){
+      if (!result.users.includes(req.user.id).toString()) {
         res.sendStatus(401);
-      }else{
+      } else {
         next();
       }
     })
@@ -26,65 +26,68 @@ function userInChatRoom(req,res,next){
 }
 
 router.get('/chat-window', jwtAuth, (req, res, next) => {
-  const {url} = req.headers;
-  console.log('url in get request is:', url);
-  return (
-    Chatroom.findOne({url})
-      .populate('users')
-      .populate('messages')
-      .then((results) => {
-        res.status(200).json(results);
-      })
-      .catch(err => {
-        next(err);
-      })
-  );
+  const { url } = req.headers;
+  return Chatroom.findOne({ url })
+    .populate('users')
+    .populate('messages')
+    .then(results => {
+      res.status(200).json(results);
+    })
+    .catch(err => {
+      next(err);
+    });
 });
 //ensure user is in chatroom
 
-function missingField(req,res,next){
-  console.log(req.headers);
-  const requiredFields = ['message']; 
+function missingField(req, res, next) {
+  const requiredFields = ['message'];
   const requireHeaderFields = ['url'];
-  const missingHeaderField = requireHeaderFields.find(field => !(field in req.headers));
+  const missingHeaderField = requireHeaderFields.find(
+    field => !(field in req.headers)
+  );
   const missingField = requiredFields.find(field => !(field in req.body));
 
-  console.log(missingField, missingHeaderField);
   if (missingField || missingHeaderField) {
     return res.status(422).json({
       code: 422,
       reason: 'ValidationError',
       message: 'Missing field',
-      location: missingField
+      location: missingField,
     });
-  }else{
+  } else {
     return next();
   }
 }
 
-router.post('/chat-window', jsonParser, jwtAuth, userInChatRoom, missingField, (req, res, next) => {
+router.post(
+  '/chat-window',
+  jsonParser,
+  jwtAuth,
+  userInChatRoom,
+  missingField,
+  (req, res, next) => {
+    const { id: user } = req.user;
+    const { message } = req.body;
+    const { url } = req.headers;
 
-  const {id: user} = req.user;
-  const { message } = req.body;
-  const { url } = req.headers;
-
-  Message.create({message, user})
-    .then(result => {
-      return result._id;
-    })
-    .then(messageId => {
-      Chatroom.findOneAndUpdate({url}, {$push: {messages: messageId}}, {new: true})
-        .then((result) => {
-          res.status(201).json({result});
+    Message.create({ message, user })
+      .then(result => {
+        return result._id;
+      })
+      .then(messageId => {
+        Chatroom.findOneAndUpdate(
+          { url },
+          { $push: { messages: messageId } },
+          { new: true }
+        ).then(result => {
+          res.status(201).json({ result });
         });
-    })
-    .catch(err => {
-      console.log(err);
-      next(err);
-    });
+      })
+      .catch(err => {
+        console.log(err);
+        next(err);
+      });
+  }
+);
 
-
-});
-
-
-module.exports =  {router} ;
+module.exports = { router };
