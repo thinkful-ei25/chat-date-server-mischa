@@ -64,31 +64,66 @@ function runServer(port = PORT) {
   let io = socket(server);
 
   //openRooms object --> contains chatroomId: {user1, user2}
-  const openRooms = {};
-
+  let openRooms = {};
+  let people = {};
+  function leaveRoom(socket, referer) {
+    if (referer !== `${CLIENT_ORIGIN}/dashboard`) {
+      let { chatroom } = people[socket];
+      if (people[socket]) {
+        openRooms[chatroom].active = false;
+        openRooms[chatroom].forEach(user => {
+          if (socket.id === user.socketId) {
+            user.active = false;
+          }
+        });
+      }
+      return chatroom;
+    }
+  }
   function findActiveRooms() {
     const rooms = Object.keys(openRooms);
     return rooms.find(room => {
-      if (!openRooms[room].user2) {
+      if (openRooms[room].active) {
         return true;
       }
     });
   }
+
   io.on('connection', socket => {
-    console.log('connected:', socket.id);
-    socket.on('disconnect', data => {
-      //on disconnect from room disconnect other user from room
+    socket.on('disconnect', () => {
+      const { referer } = socket.handshake.headers;
+      const chatroom = leaveRoom(socket, referer);
+      if (chatroom) {
+        io.sockets.to(chatroom).emit('partnerLeftRoom', {
+          user1: openRooms[chatroom][0],
+          user2: openRooms[chatroom][1],
+        });
+      }
     });
 
     socket.on('subscribe', ({ chatroom, username }) => {
       socket.join(chatroom);
       if (openRooms[chatroom]) {
-        openRooms[chatroom].user2 = username;
+        openRooms[chatroom][1] = {
+          username,
+          socketId: socket.id,
+          active: true,
+        };
       } else {
-        openRooms[chatroom] = { user1: username, user2: null };
+        openRooms[chatroom] = [
+          { username, socketId: socket.id, active: true },
+          { user2: null },
+        ];
+        openRooms[chatroom].active = true;
       }
+      people[socket] = { username, chatroom };
+
       //send user data for both users when user subscribes ==> update front eend with that info
-      io.sockets.to(chatroom).emit('joined', username);
+      io.sockets.to(chatroom).emit('joined', {
+        user1: openRooms[chatroom][0],
+        user2: openRooms[chatroom][1],
+      });
+
       io.sockets.emit('active-rooms', findActiveRooms(io));
     });
     socket.on('find-room', () => {
@@ -96,7 +131,11 @@ function runServer(port = PORT) {
     });
 
     socket.on('SEND_MESSAGE', function(data) {
-      io.sockets.to(data.url).emit('RECIEVE_MESSAGE', data);
+      console.log(data);
+      io.sockets.to(data.url).emit('recieve_message', {
+        message: data.message,
+        user: data.username,
+      });
     });
   });
 }
