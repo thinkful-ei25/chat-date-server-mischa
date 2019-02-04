@@ -62,18 +62,41 @@ function runServer(port = PORT) {
       console.error(err);
     });
   let io = socket(server);
+
+  //openRooms object --> contains chatroomId: {user1, user2}
+  const openRooms = {};
+
+  function findActiveRooms() {
+    const rooms = Object.keys(openRooms);
+    return rooms.find(room => {
+      if (!openRooms[room].user2) {
+        return true;
+      }
+    });
+  }
   io.on('connection', socket => {
     console.log('connected:', socket.id);
-    socket.on('disconnect', () => {
-      console.log(socket.id);
+    socket.on('disconnect', data => {
+      //on disconnect from room disconnect other user from room
     });
-    socket.on('subscribe', chatRoom => {
-      console.log('room id:', chatRoom);
-      socket.join(chatRoom);
+
+    socket.on('subscribe', ({ chatroom, username }) => {
+      socket.join(chatroom);
+      if (openRooms[chatroom]) {
+        openRooms[chatroom].user2 = username;
+      } else {
+        openRooms[chatroom] = { user1: username, user2: null };
+      }
+      //send user data for both users when user subscribes ==> update front eend with that info
+      io.sockets.to(chatroom).emit('joined', username);
+      io.sockets.emit('active-rooms', findActiveRooms(io));
     });
+    socket.on('find-room', () => {
+      io.sockets.emit('active-rooms', findActiveRooms(io));
+    });
+
     socket.on('SEND_MESSAGE', function(data) {
-      console.log(data);
-      io.sockets.in(data.url).emit('RECIEVE_MESSAGE', data);
+      io.sockets.to(data.url).emit('RECIEVE_MESSAGE', data);
     });
   });
 }
