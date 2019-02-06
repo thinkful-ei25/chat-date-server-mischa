@@ -8,17 +8,17 @@ const UserSchema = mongoose.Schema({
   username: {
     type: String,
     required: true,
-    unique: true
+    unique: true,
   },
   password: {
     type: String,
-    required: true
+    required: true,
   },
-  firstName: {type: String, default: ''},
-  lastName: {type: String, default: ''},
-  loggedIn: {type: Boolean, default: false},
-  active: {type: Boolean, default: false},
-  connections: [{type: mongoose.Schema.Types.ObjectId, ref: 'User'}]
+  firstName: { type: String, default: '' },
+  lastName: { type: String, default: '' },
+  loggedIn: { type: Boolean, default: false },
+  active: { type: Boolean, default: false },
+  connections: [{ type: mongoose.Schema.Types.ObjectId, ref: 'User' }],
 });
 
 UserSchema.methods.serialize = function() {
@@ -26,7 +26,7 @@ UserSchema.methods.serialize = function() {
     username: this.username || '',
     lastName: this.lastName || '',
     firstName: this.firstName || '',
-    id: this._id
+    id: this._id,
   };
 };
 
@@ -35,7 +35,8 @@ UserSchema.set('toJSON', {
   transform: (doc, result) => {
     delete result._id;
     delete result.__v;
-  }
+    delete result.password;
+  },
 });
 
 UserSchema.methods.validatePassword = function(password) {
@@ -48,4 +49,4 @@ UserSchema.statics.hashPassword = function(password) {
 
 const User = mongoose.model('User', UserSchema);
 
-module.exports = {User};
+module.exports = { User };
