@@ -52,6 +52,35 @@ app.use((err, req, res, next) => {
   }
 });
 
+let openRooms = {};
+let people = {};
+
+function leaveRoom(socketId, referer) {
+  if (referer !== `${CLIENT_ORIGIN}/dashboard`) {
+    const chatroomInfo = people[socketId];
+    let url;
+    if (chatroomInfo) {
+      url = chatroomInfo.chatroom;
+      openRooms[url].active = false;
+      openRooms[url].users.forEach(user => {
+        if (socketId === user.socketId) {
+          user.active = false;
+        }
+      });
+    }
+    return url;
+  }
+}
+function findActiveRooms() {
+  const rooms = Object.keys(openRooms);
+  const activeRoom = rooms.find(room => {
+    if (openRooms[room].active) {
+      return true;
+    }
+  });
+  return activeRoom;
+}
+
 function runServer(port = PORT) {
   const server = app
     .listen(port, () => {
@@ -64,39 +93,15 @@ function runServer(port = PORT) {
   let io = socket(server);
 
   //openRooms object --> contains chatroomId: {user1, user2}
-  let openRooms = {};
-  let people = {};
-  function leaveRoom(socket, referer) {
-    if (referer !== `${CLIENT_ORIGIN}/dashboard`) {
-      let { chatroom } = people[socket];
-      if (people[socket]) {
-        openRooms[chatroom].active = false;
-        openRooms[chatroom].forEach(user => {
-          if (socket.id === user.socketId) {
-            user.active = false;
-          }
-        });
-      }
-      return chatroom;
-    }
-  }
-  function findActiveRooms() {
-    const rooms = Object.keys(openRooms);
-    return rooms.find(room => {
-      if (openRooms[room].active) {
-        return true;
-      }
-    });
-  }
 
   io.on('connection', socket => {
     socket.on('disconnect', () => {
       const { referer } = socket.handshake.headers;
-      const chatroom = leaveRoom(socket, referer);
+      const chatroom = leaveRoom(socket.id, referer);
       if (chatroom) {
         io.sockets.to(chatroom).emit('partnerLeftRoom', {
-          user1: openRooms[chatroom][0],
-          user2: openRooms[chatroom][1],
+          user1: openRooms[chatroom].users[0],
+          user2: openRooms[chatroom].users[1],
         });
       }
     });
@@ -104,24 +109,27 @@ function runServer(port = PORT) {
     socket.on('subscribe', ({ chatroom, username }) => {
       socket.join(chatroom);
       if (openRooms[chatroom]) {
-        openRooms[chatroom][1] = {
+        openRooms[chatroom].users[1] = {
           username,
           socketId: socket.id,
           active: true,
         };
       } else {
-        openRooms[chatroom] = [
-          { username, socketId: socket.id, active: true },
-          { user2: null },
-        ];
-        openRooms[chatroom].active = true;
+        openRooms[chatroom] = {
+          users: [
+            { username, socketId: socket.id, active: true },
+            { user2: null },
+          ],
+          active: true,
+        };
       }
-      people[socket] = { username, chatroom };
+      console.log(openRooms[chatroom]);
+      people[socket.id] = { username, chatroom };
 
       //send user data for both users when user subscribes ==> update front eend with that info
       io.sockets.to(chatroom).emit('joined', {
-        user1: openRooms[chatroom][0],
-        user2: openRooms[chatroom][1],
+        user1: openRooms[chatroom].users[0],
+        user2: openRooms[chatroom].users[1],
       });
 
       io.sockets.emit('active-rooms', findActiveRooms(io));
@@ -130,8 +138,7 @@ function runServer(port = PORT) {
       io.sockets.emit('active-rooms', findActiveRooms(io));
     });
 
-    socket.on('SEND_MESSAGE', function(data) {
-      console.log(data);
+    socket.on('send_message', function(data) {
       io.sockets.to(data.url).emit('recieve_message', {
         message: data.message,
         user: data.username,
